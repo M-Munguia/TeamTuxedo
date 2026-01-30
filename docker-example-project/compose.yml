@@ -1,0 +1,9 @@
+#tutorial: https://dev.to/dev_tips/the-only-docker-guide-youll-ever-need-beginner-to-expert-1bca
+
+services:
+  app:
+    build: .
+    container_name: python_app
+    ports:
+      - "5000:5000"
+    command: python app.py
