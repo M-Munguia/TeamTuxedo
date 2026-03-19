@@ -1,0 +1,219 @@
+import React, { useCallback, useEffect, useRef, useState } from 'react'
+import { Popover, Transition } from '@headlessui/react'
+import { ChevronDownIcon } from '@heroicons/react/20/solid'
+import classNames from 'classnames'
+import * as storage from '../../util/storage'
+import { isModifierPressed, isTyping, Keybind } from '../../keybinding'
+import { useDashboardStateContext } from '../../dashboard-state-context'
+import { PlausibleSite } from '../../site-context'
+import { useMatch } from 'react-router-dom'
+import { rootRoute } from '../../router'
+import { BlurMenuButtonOnEscape, popover } from '../../components/popover'
+import { DashboardState } from '../../dashboard-state'
+import { Dayjs } from 'dayjs'
+import { DashboardPeriod } from '../../dashboard-time-periods'
+
+const INTERVAL_LABELS: Record<string, string> = {
+  minute: 'Minutes',
+  hour: 'Hours',
+  day: 'Days',
+  week: 'Weeks',
+  month: 'Months'
+}
+
+function validIntervals(
+  site: Pick<PlausibleSite, 'validIntervalsByPeriod'>,
+  dashboardState: Pick<DashboardState, 'period' | 'to' | 'from'>
+): string[] {
+  if (
+    dashboardState.period === DashboardPeriod.custom &&
+    dashboardState.from &&
+    dashboardState.to
+  ) {
+    if (dashboardState.to.diff(dashboardState.from, 'days') < 7) {
+      return ['day']
+    } else if (dashboardState.to.diff(dashboardState.from, 'months') < 1) {
+      return ['day', 'week']
+    } else if (dashboardState.to.diff(dashboardState.from, 'months') < 12) {
+      return ['day', 'week', 'month']
+    } else {
+      return ['week', 'month']
+    }
+  } else {
+    return site.validIntervalsByPeriod[dashboardState.period]
+  }
+}
+
+export function getDefaultInterval(
+  dashboardState: Pick<DashboardState, 'period' | 'to' | 'from'>,
+  validIntervals: string[]
+): string {
+  const defaultByPeriod: Record<string, string> = {
+    day: 'hour',
+    '24h': 'hour',
+    '7d': 'day',
+    '6mo': 'month',
+    '12mo': 'month',
+    year: 'month'
+  }
+
+  if (
+    dashboardState.period === DashboardPeriod.custom &&
+    dashboardState.from &&
+    dashboardState.to
+  ) {
+    return defaultForCustomPeriod(dashboardState.from, dashboardState.to)
+  } else {
+    return defaultByPeriod[dashboardState.period] || validIntervals[0]
+  }
+}
+
+function defaultForCustomPeriod(from: Dayjs, to: Dayjs): string {
+  if (to.diff(from, 'days') < 30) {
+    return 'day'
+  } else if (to.diff(from, 'months') < 6) {
+    return 'week'
+  } else {
+    return 'month'
+  }
+}
+
+function getStoredInterval(period: string, domain: string): string | null {
+  const stored = storage.getItem(`interval__${period}__${domain}`)
+
+  if (stored === 'date') {
+    return 'day'
+  } else {
+    return stored
+  }
+}
+
+function storeInterval(period: string, domain: string, interval: string): void {
+  storage.setItem(`interval__${period}__${domain}`, interval)
+}
+
+export const useStoredInterval = (
+  site: PlausibleSite,
+  { to, from, period }: Pick<DashboardState, 'to' | 'from' | 'period'>
+) => {
+  const availableIntervals = validIntervals(site, { to, from, period })
+
+  const isValid = (interval: string | null): interval is string =>
+    !!interval && availableIntervals.includes(interval)
+
+  const storedInterval = getStoredInterval(period, site.domain)
+
+  const [selectedInterval, setSelectedInterval] = useState<string | null>(null)
+
+  useEffect(() => {
+    setSelectedInterval(null)
+  }, [availableIntervals])
+
+  const onIntervalClick = useCallback(
+    (interval: string) => {
+      storeInterval(period, site.domain, interval)
+      setSelectedInterval(interval)
+    },
+    [period, site.domain]
+  )
+
+  return {
+    selectedInterval: isValid(selectedInterval)
+      ? selectedInterval
+      : isValid(storedInterval)
+        ? storedInterval
+        : getDefaultInterval({ to, from, period }, availableIntervals),
+    onIntervalClick,
+    availableIntervals
+  }
+}
+
+export function IntervalPicker({
+  selectedInterval,
+  onIntervalClick,
+  options
+}: {
+  selectedInterval: string
+  onIntervalClick: (interval: string) => void
+  options: string[]
+}): JSX.Element | null {
+  const menuElement = useRef<HTMLButtonElement>(null)
+  const { dashboardState } = useDashboardStateContext()
+  const dashboardRouteMatch = useMatch(rootRoute.path)
+
+  if (dashboardState.period == 'realtime') {
+    return null
+  }
+
+  return (
+    <>
+      {!!dashboardRouteMatch && (
+        <Keybind
+          targetRef="document"
+          type="keydown"
+          keyboardKey="i"
+          handler={() => {
+            menuElement.current?.click()
+          }}
+          shouldIgnoreWhen={[isModifierPressed, isTyping]}
+        />
+      )}
+      <Popover className="relative inline-block">
+        {({ close: closeDropdown }) => (
+          <>
+            <BlurMenuButtonOnEscape targetRef={menuElement} />
+            <Popover.Button
+              ref={menuElement}
+              className={classNames(
+                popover.toggleButton.classNames.linkLike,
+                'rounded-sm text-sm flex items-center'
+              )}
+            >
+              <span data-testid="current-graph-interval">
+                {INTERVAL_LABELS[selectedInterval]}
+              </span>
+              <ChevronDownIcon className="ml-1 h-4 w-4" aria-hidden="true" />
+            </Popover.Button>
+
+            <Transition
+              as="div"
+              {...popover.transition.props}
+              className={classNames(
+                popover.transition.classNames.right,
+                'mt-2 w-56'
+              )}
+            >
+              <Popover.Panel
+                className={classNames(
+                  popover.panel.classNames.roundedSheet,
+                  'font-normal'
+                )}
+              >
+                {options.map((option) => (
+                  <button
+                    key={option}
+                    onClick={() => {
+                      onIntervalClick(option)
+                      closeDropdown()
+                    }}
+                    data-selected={option == selectedInterval}
+                    className={classNames(
+                      popover.items.classNames.navigationLink,
+                      popover.items.classNames.selectedOption,
+                      popover.items.classNames.hoverLink,
+                      'w-full text-left'
+                    )}
+                  >
+                    <span data-testid="graph-interval">
+                      {INTERVAL_LABELS[option]}
+                    </span>
+                  </button>
+                ))}
+              </Popover.Panel>
+            </Transition>
+          </>
+        )}
+      </Popover>
+    </>
+  )
+}
