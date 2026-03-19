@@ -1,0 +1,51 @@
+services:
+  otterwiki:
+    image: redimp/otterwiki:2
+    container_name: otterwiki
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    volumes:
+      - otterwiki_data:/app-data
+      - ./otterwiki_custom:/app/otterwiki/static/custom
+    networks:
+      - analytics_net
+
+  matomo:
+    image: matomo
+    container_name: matomo
+    restart: unless-stopped
+    ports:
+      - "8081:80"
+    environment:
+      MATOMO_DATABASE_HOST: matomo_db
+      MATOMO_DATABASE_ADAPTER: mysql
+      MATOMO_DATABASE_TABLES_PREFIX: matomo_
+      MATOMO_DATABASE_USERNAME: matomo
+      MATOMO_DATABASE_PASSWORD: matomopass
+      MATOMO_DATABASE_DBNAME: matomo
+    depends_on:
+      - matomo_db
+    networks:
+      - analytics_net
+
+  matomo_db:
+    image: mariadb:10
+    container_name: matomo_db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_DATABASE: matomo
+      MYSQL_USER: matomo
+      MYSQL_PASSWORD: matomopass
+    volumes:
+      - matomo_db:/var/lib/mysql
+    networks:
+      - analytics_net
+
+volumes:
+  otterwiki_data:
+  matomo_db:
+
+networks:
+  analytics_net:
