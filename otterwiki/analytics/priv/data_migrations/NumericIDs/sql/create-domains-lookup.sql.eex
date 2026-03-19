@@ -1,1 +1,0 @@
-CREATE TABLE IF NOT EXISTS domains_lookup(site_id UInt64, domain String) ENGINE Memory;

@@ -1,2 +1,0 @@
-ALTER TABLE <%= @table %>
-MATERIALIZE COLUMN acquisition_channel

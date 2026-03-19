@@ -1,1 +1,0 @@
-ALTER TABLE sessions_v2 ATTACH PARTITION ID '<%= @partition %>' FROM tmp_sessions_v2

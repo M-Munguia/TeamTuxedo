@@ -1,1 +1,0 @@
-ALTER TABLE sessions_v2_tmp_versioned ATTACH PARTITION '<%= @partition %>' FROM sessions_v2
