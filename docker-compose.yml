@@ -1,0 +1,44 @@
+---
+#
+# This docker-compose.yml is for running the latest development version
+# of An Otter Wiki.
+#
+# Please read the Installation guide <https://otterwiki.com/Installation>
+# to get started.
+#
+
+services:
+  otterwiki:
+    image: redimp/otterwiki:2
+    restart: unless-stopped
+    ports:
+      - 8080:80
+    volumes:
+      - ./app-data:/app-data
+  # mount the local directory ./app-data into the container
+      # (so settings, database and repository are accessible)
+
+
+  umami:
+      image: elestio/umami:latest
+      ports:
+        - "3000:3000"
+      environment:
+        DATABASE_URL: postgresql://umami:trust@db:5432/umami
+        DATABASE_TYPE: postgresql
+        APP_SECRET: base
+      depends_on:
+        - db
+      restart: always
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: umami
+      POSTGRES_USER: umami
+      POSTGRES_PASSWORD: trust
+    volumes:
+    - ./umami-db-data:/var/lib/postgresql/data
+    restart: always
+
+volumes:
+  umami_db_data:
