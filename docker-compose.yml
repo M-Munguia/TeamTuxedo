@@ -15,6 +15,7 @@ services:
       - 8080:80
     volumes:
       - ./app-data:/app-data
+      - ./custom-files:/app/otterwiki/static/custom
   # mount the local directory ./app-data into the container
       # (so settings, database and repository are accessible)
 
