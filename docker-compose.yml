@@ -40,6 +40,18 @@ services:
     volumes:
     - ./umami-db-data:/var/lib/postgresql/data
     restart: always
+  
+  chrome-browser:
+    image: selenium/standalone-chrome
+    ports:
+      - "4444:4444"
+
+  traffic-generator:
+    build: generator/
+    container_name: generator_script
+    depends_on: 
+      - umami
+      - chrome-browser
 
 volumes:
   umami_db_data:
