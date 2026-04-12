@@ -16,8 +16,32 @@ services:
     volumes:
       - ./app-data:/app-data
       - ./custom-files:/app/otterwiki/static/custom
+    
   # mount the local directory ./app-data into the container
       # (so settings, database and repository are accessible)
+      
+
+
+  #selenium-hub:
+    #image: selenium/hub:latest
+    #container_name: selenium-hub
+    #ports:
+     # - "4444:4444"
+     # - "4442:4442"
+     # - "4443:4443"
+
+  chrome-browser:
+    image: selenium/standalone-chrome
+    ports:
+      - "4444:4444"
+
+  traffic-script:
+    build: .
+    volumes:
+      - .:/app
+    depends_on:
+      - umami
+      - chrome-browser
 
 
   umami:
@@ -27,10 +51,13 @@ services:
       environment:
         DATABASE_URL: postgresql://umami:trust@db:5432/umami
         DATABASE_TYPE: postgresql
+        DISABLE_BOT_CHECK: 1
         APP_SECRET: base
       depends_on:
         - db
       restart: always
+
+
   db:
     image: postgres:15-alpine
     environment:
