@@ -28,6 +28,7 @@ services:
         DATABASE_URL: postgresql://umami:trust@db:5432/umami
         DATABASE_TYPE: postgresql
         APP_SECRET: base
+        DISABLE_BOT_CHECK: 1
       depends_on:
         - db
       restart: always
@@ -38,8 +39,22 @@ services:
       POSTGRES_USER: umami
       POSTGRES_PASSWORD: trust
     volumes:
-    - ./umami-db-data:/var/lib/postgresql/data
+      - ./umami-db-data:/var/lib/postgresql/data
     restart: always
+
+  selenium:
+    image: selenium/standalone-chrome:latest
+    ports:
+      - "4444:4444"
+      - "7900:7900"
+    shm_size: 2gb
+   
+  traffic:
+      build: ./traffic-gen
+      depends_on:
+        - otterwiki
+        - selenium
+      restart: unless-stopped
 
 volumes:
   umami_db_data:
