@@ -27,6 +27,7 @@ services:
       environment:
         DATABASE_URL: postgresql://umami:trust@db:5432/umami
         DATABASE_TYPE: postgresql
+        DISABLE_BOT_CHECK: 1
         APP_SECRET: base
       depends_on:
         - db
@@ -40,6 +41,18 @@ services:
     volumes:
     - ./umami-db-data:/var/lib/postgresql/data
     restart: always
+  
+  chrome-browser:
+    image: selenium/standalone-chrome
+    ports:
+      - "4444:4444"
+
+  traffic-generator:
+    build: generator/
+    container_name: generator_script
+    depends_on: 
+      - umami
+      - chrome-browser
 
 volumes:
   umami_db_data:
