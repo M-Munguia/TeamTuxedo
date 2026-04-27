@@ -53,6 +53,8 @@ services:
     depends_on: 
       - umami
       - chrome-browser
-
+    volumes:
+    - ./custom-files:/shared/custom-files
+    
 volumes:
   umami_db_data:
