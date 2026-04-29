@@ -64,7 +64,10 @@ class TrafficGenerator:
             return False
         
         response = requests.get(f"http://umami:3000/api/websites/{id}", headers = {"Authorization": f"Bearer {token}"})
-        if response.status_code == 200:
+        print(response.text)
+        
+        if id in response.text:
+            print("[!] Website is valid")
             return True
         
         return False

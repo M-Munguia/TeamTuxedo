@@ -1,1 +1,1 @@
-<script defer src="http://umami:3000/script.js" data-website-id="8e80976d-a22b-4112-9124-062fb9736a5b"></script>
+<script defer src="http://umami:3000/script.js" data-website-id="682f4fa9-e469-4fd4-924c-14f548e3634e"></script>
